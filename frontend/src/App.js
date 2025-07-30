@@ -1,6 +1,6 @@
 import './App.css';
-import Header from './components/Header';
-
+import Header from './components/header';
+import Footer from './components/footer'; // 👈 Importa o Footer
 
 function App() {
   return (
@@ -11,6 +11,8 @@ function App() {
       <div className="ad-space">
         <p>Espaço reservado para futuras publicidades</p>
       </div>
+
+      <Footer /> {/* 👈 Chama o Footer */}
     </div>
   );
 }

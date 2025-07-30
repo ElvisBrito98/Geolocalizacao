@@ -1,0 +1,25 @@
+.footer {
+  width: 100%;
+  background-color: #f0f0f0; /* cinza claro */
+  color: #555555; /* cinza escuro */
+  text-align: center;
+  padding: 15px 10px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  /* para garantir que fique por cima */
+  z-index: 1000;
+}
+
+.address {
+  margin-bottom: 8px;
+}
+
+.rights {
+  border-top: 1px solid #ccc;
+  padding-top: 8px;
+  font-weight: bold;
+}
