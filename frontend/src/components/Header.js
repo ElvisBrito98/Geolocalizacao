@@ -1,21 +1,20 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './header.css';
 import logo from '../logo.png';
 
 function Header() {
   return (
-    <div className="header">
-      {/* Faixa branca com logotipo à esquerda */}
-      <div className="top-bar">
-        <img src={logo} alt="Logo" className="logo" />
+    <div className="pc-header">
+      <div className="pc-top-bar">
+        <img src={logo} alt="Logo" className="pc-logo" />
       </div>
 
-      {/* Barra vermelha com menu alinhado à esquerda */}
-      <nav className="nav-bar">
-        <ul className="menu">
-          <li><a href="#" className="home-button" title="Início">Home</a></li>
+      <nav className="pc-nav-bar">
+        <ul className="pc-menu">
+          <li><Link to="/" className="pc-home-button" title="Início">Home</Link></li>
           <li><a href="#">Codigo Postal</a></li>
-          <li><a href="#">Plus Codes</a></li>
+          <li><Link to="/pluscodes">Plus Codes</Link></li>
         </ul>
       </nav>
     </div>

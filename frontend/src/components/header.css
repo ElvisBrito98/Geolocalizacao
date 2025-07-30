@@ -1,51 +1,49 @@
-.header {
-  width: 100%;
+.pc-header {
+  margin-bottom: 0;
 }
 
-.top-bar {
+.pc-top-bar {
   background-color: white;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 10px 40px;
-  box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
-  height: 55px;
-}
-
-.logo {
-  height: 33px;
-  margin-left: 14.3%;
-}
-
-.nav-bar {
-  background-color: #e41e25;
   padding: 10px 0;
-  height: 20px;
 }
 
-.menu {
-  list-style: none;
-  display: flex;
-  align-items: center;
+.pc-logo {
+  height: 60px;
   margin: 0;
-  padding-left: 18%;
 }
 
-.menu li {
-  margin-right: 20px;
+.pc-nav-bar {
+  background-color: #cc0000; /* vermelho escuro */
+  padding: 10px 0;
 }
 
-.menu a {
+.pc-menu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pc-menu li {
+  margin: 0 20px;
+}
+
+.pc-menu a {
   color: white;
   text-decoration: none;
   font-weight: bold;
   font-size: 16px;
 }
 
-.menu .home-button {
-  font-size: 20px;
+.pc-menu a:hover {
+  text-decoration: underline;
 }
 
-.menu a:hover {
-  text-decoration: underline;
+.pc-home-button {
+  /* Se quiser estilo específico para o botão Home */
 }
