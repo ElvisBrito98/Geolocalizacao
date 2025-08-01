@@ -1,6 +1,5 @@
 from openlocationcode import openlocationcode as olc
 
-
 def decode_plus_code(plus_code: str, reference_lat: float = None, reference_lon: float = None):
     try:
         # Se o código não for completo e houver referência, completa-o
@@ -19,6 +18,4 @@ def decode_plus_code(plus_code: str, reference_lat: float = None, reference_lon:
         return {"error": str(e)}
 
 def generate_google_maps_link(lat: float, lon: float) -> str:
-    return f"https://www.google.com/maps?q={lat},{lon}"
-   
-
+    return f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"

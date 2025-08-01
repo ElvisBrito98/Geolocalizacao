@@ -1,6 +1,6 @@
 #uvicorn run:app --reload
 #http://localhost:8000/api/pluscode?lat=14.916973&lng=-23.507579
-
+ #uvicorn run:app --reload --port 8000
 
 
 

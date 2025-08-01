@@ -5,7 +5,7 @@ import Header from '../components/header';
 import Footer from '../components/footer';
 import 'leaflet/dist/leaflet.css';
 
-// Configuração do ícone
+// Icon configuration
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
@@ -30,26 +30,34 @@ function Pluscodes() {
   const [pluscodeInput, setPluscodeInput] = useState('');
   const [apiResult, setApiResult] = useState(null);
   const [apiError, setApiError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const mapRef = useRef(null);
 
-  // Atualização do mapa
+  // Map position update
   useEffect(() => {
-    if (mapRef.current) {
+    if (mapRef.current && position) {
       mapRef.current.flyTo(position, 16, { duration: 1 });
     }
   }, [position]);
 
   const searchAtPosition = async (lat, lng) => {
     try {
+      setIsLoading(true);
       const response = await fetch(`http://localhost:8000/api/pluscode?lat=${lat}&lng=${lng}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error from API');
+      }
+      
       const data = await response.json();
-      
-      if (!response.ok) throw new Error(data.error || 'Erro na API');
-      
       setApiResult(data);
       setApiError(null);
     } catch (error) {
       setApiError(error.message);
+      console.error("Search error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,14 +80,50 @@ function Pluscodes() {
     }
   };
 
-  // Formulário inativo de Plus Code
-  const handlePluscodeSubmit = (e) => {
+  const handlePluscodeSubmit = async (e) => {
     e.preventDefault();
-    setApiError("Funcionalidade em desenvolvimento");
-    setApiResult({
-      plus_code: pluscodeInput,
-      message: "Busca por Plus Code estará disponível em breve"
-    });
+    
+    if (!pluscodeInput.trim()) {
+      setApiError("Please enter a Plus Code");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setApiError(null);
+      
+      const response = await fetch(
+        `http://localhost:5000/localizar?code=${encodeURIComponent(pluscodeInput)}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to decode Plus Code');
+      }
+
+      const data = await response.json();
+      
+      // Update state with results
+      setApiResult({
+        plus_code: data.plus_code,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        google_maps_link: data.google_maps_link,
+        message: `Found location: ${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`
+      });
+      
+      // Update map position
+      const newPosition = [data.latitude, data.longitude];
+      setPosition(newPosition);
+      setLatInput(data.latitude.toFixed(6));
+      setLngInput(data.longitude.toFixed(6));
+
+    } catch (error) {
+      setApiError(error.message);
+      console.error("Plus Code search error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -102,7 +146,7 @@ function Pluscodes() {
               />
               <Marker position={position}>
                 <Popup>
-                  {apiResult?.plus_code || "Clique duas vezes para pesquisar"}
+                  {apiResult?.plus_code || "Double click to search"}
                 </Popup>
               </Marker>
               <MapClickHandler onDoubleClick={handleMapDoubleClick} />
@@ -110,7 +154,7 @@ function Pluscodes() {
           </div>
 
           <div className="col-md-3">
-            {/* Formulário ativo - Coordenadas */}
+            {/* Coordinates Search Form */}
             <form onSubmit={handleSearchLatLng} className="mb-4">
               <h5>Buscar por Coordenadas</h5>
               <div className="mb-3">
@@ -135,46 +179,69 @@ function Pluscodes() {
                   placeholder="-23.507523"
                 />
               </div>
-              <button type="submit" className="btn btn-primary w-100">
-                Buscar
+              <button 
+                type="submit" 
+                className="btn btn-primary w-100"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Procurando...' : 'Pesquisar'}
               </button>
             </form>
 
-            {/* Formulário inativo - Plus Code */}
+            {/* Plus Code Search Form */}
             <form onSubmit={handlePluscodeSubmit} className="mb-4">
               <h5>Buscar por Plus Code</h5>
               <div className="mb-3">
-                <label className="form-label">Código</label>
+                <label className="form-label">Plus Code</label>
                 <input
                   type="text"
                   className="form-control"
                   value={pluscodeInput}
                   onChange={(e) => setPluscodeInput(e.target.value)}
                   placeholder="7FG9V3Q2+G9"
-                  disabled
                 />
               </div>
               <button 
                 type="submit" 
-                className="btn btn-secondary w-100"
-                disabled
+                className="btn btn-primary w-100"
+                disabled={isLoading}
               >
-                Em Desenvolvimento
+                {isLoading ? 'Processando...' : 'Pesquisar'}
               </button>
             </form>
 
-            {/* Resultados */}
+            {/* Results Display */}
+            {isLoading && (
+              <div className="text-center my-3">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Aguarde...</span>
+                </div>
+              </div>
+            )}
+
             {apiResult && (
               <div className={`alert ${apiResult.message ? 'alert-info' : 'alert-success'}`}>
                 {apiResult.plus_code && (
                   <>
-                    <p><strong>Plus Code (11 dígitos):</strong> {apiResult.plus_code}</p>
-                    <p><strong>Coordenadas:</strong> {position[0].toFixed(6)}, {position[1].toFixed(6)}</p>
-                    {apiResult.ilha && <p><strong>Ilha:</strong> {apiResult.ilha}</p>}
-                    {apiResult.cidade && <p><strong>Cidade:</strong> {apiResult.cidade}</p>}
+                    <p><strong>Plus Code:</strong> {apiResult.plus_code}</p>
+                    <p><strong>Coordenadas:</strong> {apiResult.latitude?.toFixed(6) || position[0].toFixed(6)}, {apiResult.longitude?.toFixed(6) || position[1].toFixed(6)}</p>
+                    {apiResult.ilha && <p><strong>Island:</strong> {apiResult.ilha}</p>}
+                    {apiResult.cidade && <p><strong>City:</strong> {apiResult.cidade}</p>}
+                    {apiResult.google_maps_link && (
+                      <p>
+                        <a 
+                          href={apiResult.google_maps_link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="btn btn-sm btn-outline-primary"
+                        >
+                          Abrir no Google Maps
+                        </a>
+                      </p>
+                    )}
                   </>
                 )}
-                {apiResult.message && <p>{apiResult.message}</p>}
+               {/*  {apiResult.message && <p>{apiResult.message}</p>} */}
               </div>
             )}
 
