@@ -225,8 +225,8 @@ function Pluscodes() {
                   <>
                     <p><strong>Plus Code:</strong> {apiResult.plus_code}</p>
                     <p><strong>Coordenadas:</strong> {apiResult.latitude?.toFixed(6) || position[0].toFixed(6)}, {apiResult.longitude?.toFixed(6) || position[1].toFixed(6)}</p>
-                    {apiResult.ilha && <p><strong>Island:</strong> {apiResult.ilha}</p>}
-                    {apiResult.cidade && <p><strong>City:</strong> {apiResult.cidade}</p>}
+                    {apiResult.ilha && <p><strong>Ilha:</strong> {apiResult.ilha}</p>}
+                    {apiResult.cidade && <p><strong>Cidade:</strong> {apiResult.cidade}</p>}
                     {apiResult.google_maps_link && (
                       <p>
                         <a 
