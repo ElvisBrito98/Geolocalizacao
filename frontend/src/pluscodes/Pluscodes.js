@@ -1,41 +1,85 @@
-import React, { useState } from 'react';
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import React, { useState, useRef, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 import Header from '../components/header';
 import Footer from '../components/footer';
 import 'leaflet/dist/leaflet.css';
 
-// Componente para mudar a view do mapa
-function ChangeView({ center, zoom }) {
-  const map = useMap();
-  map.setView(center, zoom);
+// Configuração do ícone
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+function MapClickHandler({ onDoubleClick }) {
+  useMapEvents({
+    dblclick(e) {
+      onDoubleClick(e.latlng);
+    }
+  });
   return null;
 }
 
 function Pluscodes() {
   const defaultPosition = [14.917039, -23.507523];
-  const [mapCenter, setMapCenter] = useState(defaultPosition);
-  const [zoom, setZoom] = useState(14);
-
-  // Estados para inputs
+  const [position, setPosition] = useState(defaultPosition);
   const [latInput, setLatInput] = useState('');
   const [lngInput, setLngInput] = useState('');
   const [pluscodeInput, setPluscodeInput] = useState('');
+  const [apiResult, setApiResult] = useState(null);
+  const [apiError, setApiError] = useState(null);
+  const mapRef = useRef(null);
 
-  // Apenas atualizam o centro do mapa, sem validações
-  const handleSearchLatLng = (e) => {
+  // Atualização do mapa
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.flyTo(position, 16, { duration: 1 });
+    }
+  }, [position]);
+
+  const searchAtPosition = async (lat, lng) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/pluscode?lat=${lat}&lng=${lng}`);
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.error || 'Erro na API');
+      
+      setApiResult(data);
+      setApiError(null);
+    } catch (error) {
+      setApiError(error.message);
+    }
+  };
+
+  const handleMapDoubleClick = (latlng) => {
+    const { lat, lng } = latlng;
+    setPosition([lat, lng]);
+    setLatInput(lat.toFixed(6));
+    setLngInput(lng.toFixed(6));
+    searchAtPosition(lat, lng);
+  };
+
+  const handleSearchLatLng = async (e) => {
     e.preventDefault();
     const lat = parseFloat(latInput);
     const lng = parseFloat(lngInput);
-    setMapCenter([lat, lng]);
-    setZoom(15);
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      setPosition([lat, lng]);
+      await searchAtPosition(lat, lng);
+    }
   };
 
-  const handleSearchPluscode = (e) => {
+  // Formulário inativo de Plus Code
+  const handlePluscodeSubmit = (e) => {
     e.preventDefault();
-    // Aqui você vai chamar sua API para converter pluscode em lat/lng
-    // Por enquanto só deixo o pluscode no console e mantenho o mapa
-    console.log('Pluscode para buscar:', pluscodeInput);
-    // Você pode depois setar o centro assim que receber resposta da API
+    setApiError("Funcionalidade em desenvolvimento");
+    setApiResult({
+      plus_code: pluscodeInput,
+      message: "Busca por Plus Code estará disponível em breve"
+    });
   };
 
   return (
@@ -46,74 +90,99 @@ function Pluscodes() {
         <div className="row">
           <div className="col-md-9">
             <MapContainer
-              center={mapCenter}
-              zoom={zoom}
+              center={position}
+              zoom={14}
               style={{ height: '500px', width: '100%' }}
+              ref={mapRef}
+              doubleClickZoom={false}
             >
-              <ChangeView center={mapCenter} zoom={zoom} />
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; OpenStreetMap'
               />
-              {/* Marker removido para não mostrar nenhum marcador */}
+              <Marker position={position}>
+                <Popup>
+                  {apiResult?.plus_code || "Clique duas vezes para pesquisar"}
+                </Popup>
+              </Marker>
+              <MapClickHandler onDoubleClick={handleMapDoubleClick} />
             </MapContainer>
           </div>
 
           <div className="col-md-3">
+            {/* Formulário ativo - Coordenadas */}
             <form onSubmit={handleSearchLatLng} className="mb-4">
-              <h5>Buscar por Latitude/Longitude</h5>
+              <h5>Buscar por Coordenadas</h5>
               <div className="mb-3">
-                <label htmlFor="latitude" className="form-label">
-                  Latitude
-                </label>
+                <label className="form-label">Latitude</label>
                 <input
                   type="number"
-                  step="any"
+                  step="0.000001"
                   className="form-control"
-                  id="latitude"
                   value={latInput}
                   onChange={(e) => setLatInput(e.target.value)}
-                  placeholder="-23.55052"
+                  placeholder="14.917039"
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="longitude" className="form-label">
-                  Longitude
-                </label>
+                <label className="form-label">Longitude</label>
                 <input
                   type="number"
-                  step="any"
+                  step="0.000001"
                   className="form-control"
-                  id="longitude"
                   value={lngInput}
                   onChange={(e) => setLngInput(e.target.value)}
-                  placeholder="-46.633308"
+                  placeholder="-23.507523"
                 />
               </div>
               <button type="submit" className="btn btn-primary w-100">
-                Procurar
+                Buscar
               </button>
             </form>
 
-            <form onSubmit={handleSearchPluscode}>
-              <h5>Buscar por Pluscode</h5>
+            {/* Formulário inativo - Plus Code */}
+            <form onSubmit={handlePluscodeSubmit} className="mb-4">
+              <h5>Buscar por Plus Code</h5>
               <div className="mb-3">
-                <label htmlFor="pluscode" className="form-label">
-                  Pluscode completo
-                </label>
+                <label className="form-label">Código</label>
                 <input
                   type="text"
                   className="form-control"
-                  id="pluscode"
                   value={pluscodeInput}
                   onChange={(e) => setPluscodeInput(e.target.value)}
                   placeholder="7FG9V3Q2+G9"
+                  disabled
                 />
               </div>
-              <button type="submit" className="btn btn-primary w-100">
-                Procurar
+              <button 
+                type="submit" 
+                className="btn btn-secondary w-100"
+                disabled
+              >
+                Em Desenvolvimento
               </button>
             </form>
+
+            {/* Resultados */}
+            {apiResult && (
+              <div className={`alert ${apiResult.message ? 'alert-info' : 'alert-success'}`}>
+                {apiResult.plus_code && (
+                  <>
+                    <p><strong>Plus Code (11 dígitos):</strong> {apiResult.plus_code}</p>
+                    <p><strong>Coordenadas:</strong> {position[0].toFixed(6)}, {position[1].toFixed(6)}</p>
+                    {apiResult.ilha && <p><strong>Ilha:</strong> {apiResult.ilha}</p>}
+                    {apiResult.cidade && <p><strong>Cidade:</strong> {apiResult.cidade}</p>}
+                  </>
+                )}
+                {apiResult.message && <p>{apiResult.message}</p>}
+              </div>
+            )}
+
+            {apiError && (
+              <div className="alert alert-danger">
+                {apiError}
+              </div>
+            )}
           </div>
         </div>
       </div>
